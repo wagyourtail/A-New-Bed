@@ -24,12 +24,12 @@ public class ChunkRegionMixin {
     private void onUpdateBlockState(BlockPos pos, BlockState state, int flags, int maxUpdateDepth, CallbackInfoReturnable<Boolean> cir) {
         if (cir.getReturnValue()) {
             if (state.getBlock() instanceof BedBlock && state.get(BedBlock.PART) == BedPart.FOOT) {
-                RandomBedSpawns.LOGGER.debug("[RandomBedSpawns] Bed placed at " + pos.toShortString());
+                RandomBedSpawns.LOGGER.debug("Bed placed at " + pos.toShortString());
 //                throw new RuntimeException();
                 ((ServerLevelAccessor) world).addBed(pos);
             } else {
                 if (((ServerLevelAccessor) world).removeBed(pos)) {
-                    RandomBedSpawns.LOGGER.debug("[RandomBedSpawns] Bed removed at " + pos.toShortString());
+                    RandomBedSpawns.LOGGER.debug("Bed removed at " + pos.toShortString());
                 }
             }
         }

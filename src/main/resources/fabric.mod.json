@@ -2,7 +2,7 @@
     "schemaVersion": 1,
     "id": "randombedspawns",
     "version": "${version}",
-    "name": "Randombedspawns",
+    "name": "A New Bed",
     "description": "randomly move the player to a new bed when they wake up.",
     "authors": [
         "wagyourtail"
