@@ -71,9 +71,7 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
     @Inject(method = "playerTick", at = @At("HEAD"))
     private void onTick(CallbackInfo ci) {
         if (this.isSleeping()) {
-            if (++villageBedTickCount % 5 == 0) {
-                ((ServerLevelAccessor) this.getWorld()).loadNextVillage(this.getBlockPos(), 5000);
-            }
+            ((ServerLevelAccessor) this.getWorld()).loadNextVillage(this.getBlockPos(), 5000);
         }
     }
 }
