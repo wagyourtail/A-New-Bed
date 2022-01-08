@@ -13,6 +13,6 @@ public interface ServerLevelAccessor {
 
     boolean removeBed(BlockPos pos);
 
-    AtomicBoolean loadVillagesInRange(BlockPos pos, int range);
+    void loadNextVillage(BlockPos pos, int range);
 
 }

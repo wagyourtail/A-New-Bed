@@ -19,11 +19,11 @@ public class WorldMixin {
     private void onUpdateBlockState(BlockPos pos, BlockState state, int flags, int maxUpdateDepth, CallbackInfoReturnable<Boolean> cir) {
         if (cir.getReturnValue() && this instanceof ServerLevelAccessor) {
             if (state.getBlock() instanceof BedBlock && state.get(BedBlock.PART) == BedPart.FOOT) {
-                RandomBedSpawns.LOGGER.debug("Bed placed at " + pos.toShortString());
+                RandomBedSpawns.LOGGER.info("Bed placed at " + pos.toShortString());
                 ((ServerLevelAccessor) this).addBed(pos);
             } else {
                 if (((ServerLevelAccessor) this).removeBed(pos)) {
-                    RandomBedSpawns.LOGGER.debug("Bed removed at " + pos.toShortString());
+                    RandomBedSpawns.LOGGER.info("Bed removed at " + pos.toShortString());
                 }
             }
         }

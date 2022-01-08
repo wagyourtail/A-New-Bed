@@ -1,6 +1,7 @@
 package xyz.wagyourtail.randombedspawns.mixin;
 
 import com.mojang.authlib.GameProfile;
+import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.WorldGenerationProgressListener;
@@ -12,9 +13,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
-import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.dimension.DimensionType;
-import net.minecraft.world.gen.StructureAccessor;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.feature.StructureFeature;
 import net.minecraft.world.level.ServerWorldProperties;
@@ -28,6 +27,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import xyz.wagyourtail.randombedspawns.EmptyNetworkHandler;
+import xyz.wagyourtail.randombedspawns.FakeServerPlayer;
 import xyz.wagyourtail.randombedspawns.RandomBedSpawns;
 import xyz.wagyourtail.randombedspawns.ServerLevelAccessor;
 
@@ -62,6 +62,8 @@ public abstract class ServerLevelMixin implements ServerLevelAccessor {
     @Shadow public abstract void removePlayer(ServerPlayerEntity player, Entity.RemovalReason reason);
 
     @Shadow protected abstract void addPlayer(ServerPlayerEntity player);
+
+    @Shadow protected abstract boolean addEntity(Entity entity);
 
     @Inject(method = "<init>", at = @At("RETURN"))
     public void onInit(MinecraftServer server, Executor workerExecutor, LevelStorage.Session session, ServerWorldProperties properties, RegistryKey<World> worldKey, DimensionType dimensionType, WorldGenerationProgressListener worldGenerationProgressListener, ChunkGenerator chunkGenerator, boolean debugWorld, long seed, List spawners, boolean shouldTickTime, CallbackInfo ci) {
@@ -112,34 +114,29 @@ public abstract class ServerLevelMixin implements ServerLevelAccessor {
         return bedPositions.remove(pos);
     }
 
+
+
+    @Unique
+    private FakeServerPlayer watcher;
+
+    @Inject(method = "<init>", at = @At("RETURN"))
+    public void onInit2(MinecraftServer server, Executor workerExecutor, LevelStorage.Session session, ServerWorldProperties properties, RegistryKey worldKey, DimensionType dimensionType, WorldGenerationProgressListener worldGenerationProgressListener, ChunkGenerator chunkGenerator, boolean debugWorld, long seed, List spawners, boolean shouldTickTime, CallbackInfo ci) {
+        watcher = new FakeServerPlayer(this.getServer(), (ServerWorld) (Object) this, new GameProfile(UUID.randomUUID(), "RBS"));
+        watcher.interactionManager.changeGameMode(GameMode.SPECTATOR);
+        new EmptyNetworkHandler(this.getServer(), watcher);
+        addEntity(watcher);
+    }
+
     @Override
-    public AtomicBoolean loadVillagesInRange(BlockPos pos, int range) {
-        AtomicBoolean interrupted = new AtomicBoolean(false);
-        CompletableFuture.runAsync(() -> {
-            BlockPos village;
-            ServerPlayerEntity watcher = new ServerPlayerEntity(this.getServer(), (ServerWorld) (Object) this, new GameProfile(UUID.randomUUID(), "RBS"));
-            watcher.interactionManager.changeGameMode(GameMode.SPECTATOR);
-            new EmptyNetworkHandler(this.getServer(), watcher);
-            addPlayer(watcher);
-            // TODO: figure out how to get features to load without a watcher, this is scuffed
-            try {
-                while (true) {
-                    village = this.locateStructure(StructureFeature.VILLAGE, pos, range, true);
-                    if (village == null)
-                        break;
-                    if (pos.getSquaredDistance(village) > range * range)
-                        break;
-                    RandomBedSpawns.LOGGER.debug("loading village at " + village.toShortString());
-                    watcher.setPosition(village.getX(), village.getY(), village.getZ());
-                    chunkManager.updatePosition(watcher);
-                    if (interrupted.get()) break;
-                }
-            } finally {
-                watcher.remove(Entity.RemovalReason.DISCARDED);
-                removePlayer(watcher, Entity.RemovalReason.DISCARDED);
-            }
-        });
-        return interrupted;
+    public void loadNextVillage(BlockPos pos, int range) {
+        BlockPos village = this.locateStructure(StructureFeature.VILLAGE, pos, range, true);
+        if (village == null)
+            return;
+        if (pos.getSquaredDistance(village) > range * range)
+            return;
+        RandomBedSpawns.LOGGER.info("loading village at " + village.toShortString());
+        watcher.setPosition(village.getX(), village.getY(), village.getZ());
+        chunkManager.updatePosition(watcher);
     }
 
 }

@@ -5,12 +5,14 @@ import com.mojang.datafixers.util.Either;
 import net.minecraft.block.BedBlock;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Unit;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -21,13 +23,11 @@ import xyz.wagyourtail.randombedspawns.ServerLevelAccessor;
 
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @Mixin(ServerPlayerEntity.class)
 public abstract class ServerPlayerEntityMixin extends PlayerEntity {
 
-    @Unique
-    private AtomicBoolean bedFuture;
+    @Shadow public abstract ServerWorld getWorld();
 
     public ServerPlayerEntityMixin(World world, BlockPos pos, float yaw, GameProfile profile) {
         super(world, pos, yaw, profile);
@@ -35,9 +35,8 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
 
     @Inject(method = "wakeUp", at = @At(value = "FIELD", target = "Lnet/minecraft/server/network/ServerPlayerEntity;networkHandler:Lnet/minecraft/server/network/ServerPlayNetworkHandler;", ordinal = 0))
     private void onWakeUp(boolean skipSleepTimer, boolean updateSleepingPlayers, CallbackInfo ci) {
-        bedFuture.set(true);
         if (!updateSleepingPlayers || this.getWorld().isDay()) {
-            RandomBedSpawns.LOGGER.debug("naturally waking up player");
+            RandomBedSpawns.LOGGER.info("naturally waking up player");
             // get a random bed
             List<BlockPos> l = List.copyOf(((ServerLevelAccessor) getWorld()).getBeds());
             int i = new Random().nextInt(l.size());
@@ -54,16 +53,27 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
             this.setYaw(f);
             this.setPitch(0.0F);
         } else {
-            RandomBedSpawns.LOGGER.debug("player woke up early");
+            RandomBedSpawns.LOGGER.info("player woke up early");
         }
     }
 
     @Inject(method = "trySleep", at = @At("RETURN"))
     private void onSleep(BlockPos pos, CallbackInfoReturnable<Either<PlayerEntity.SleepFailureReason, Unit>> cir) {
         cir.getReturnValue().ifRight(e -> {
-            RandomBedSpawns.LOGGER.debug("sleeping player");
+            RandomBedSpawns.LOGGER.info("sleeping player");
             // load villages around player
-            bedFuture = ((ServerLevelAccessor) getWorld()).loadVillagesInRange(pos, 5000);
         });
+    }
+
+    @Unique
+    private int villageBedTickCount = 0;
+
+    @Inject(method = "playerTick", at = @At("HEAD"))
+    private void onTick(CallbackInfo ci) {
+        if (this.isSleeping()) {
+            if (++villageBedTickCount % 5 == 0) {
+                ((ServerLevelAccessor) this.getWorld()).loadNextVillage(this.getBlockPos(), 5000);
+            }
+        }
     }
 }
