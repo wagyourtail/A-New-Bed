@@ -1,0 +1,29 @@
+{
+    "schemaVersion": 1,
+    "id": "randombedspawns",
+    "version": "${version}",
+    "name": "Randombedspawns",
+    "description": "randomly move the player to a new bed when they wake up.",
+    "authors": [
+        "wagyourtail"
+    ],
+    "contact": {
+        "website": "https://wagyourtail.xyz"
+    },
+    "license": "MPL-2.0",
+    "icon": "assets/randombedspawns/icon.png",
+    "environment": "*",
+    "entrypoints": {
+        "main": [
+            "xyz.wagyourtail.randombedspawns.RandomBedSpawns"
+        ]
+    },
+    "mixins": [
+        "randombedspawns.mixins.json"
+    ],
+    "depends": {
+        "fabricloader": ">=0.12.12",
+        "fabric": "*",
+        "minecraft": "1.18.1"
+    }
+}

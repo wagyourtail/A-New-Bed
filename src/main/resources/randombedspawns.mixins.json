@@ -1,0 +1,17 @@
+{
+    "required": true,
+    "minVersion": "0.8",
+    "package": "xyz.wagyourtail.randombedspawns.mixin",
+    "compatibilityLevel": "JAVA_17",
+    "mixins": [
+        "ChunkRegionMixin",
+        "ServerLevelMixin",
+        "ServerPlayerEntityMixin",
+        "WorldMixin"
+    ],
+    "client": [
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    }
+}
